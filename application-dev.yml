@@ -9,7 +9,7 @@ middleware:
 
   triplestore:
     type: edu.tamu.scholars.middleware.service.TDBTriplestore
-    directory: /data/openvivo
+    directory: /data/
 
 spring:
   data:
