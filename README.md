@@ -21,10 +21,6 @@ Put TDB data in the data-imported/ directory.  Then `cd ..` (back up to scholars
 2) `cd ..`
 3) `docker-compose up`
 
-### or (if already imported data into TDB)
-
-3) `docker-compose up`
-
 This is making us of a file `application-dev.yml` to configure `scholars-discovery`
 for local development mode.  It also defaults to importing data into the index 
 at startup.
