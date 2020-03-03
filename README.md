@@ -46,36 +46,40 @@ Once you have running, can go this http://localhost:9000/gui and run GraphQL que
 Here is a sample one:
 
 ```graphql
-query {
-  personsFacetedSearch(
-    facets: [{field: "keywords"}],
-    filters: [{field: "preferredTitle", value:"Software Developer"}]
-    paging: { pageSize:100, pageNumber: 0},
-    query: "*",
+query  {
+  people (
+    facets: [
+      {field: "name" },
+      {field: "region"},
+    ],
+    #filters: [{field: "region", value: "NC"}]
+    paging: { pageSize:10, pageNumber: 0
+    },
+    query: "*"
   ) {
     content {
       id
       name
       keywords
-      preferredTitle
       positions {
-        organizations {
-          label
-        }
+        title
+      }
+      publications {
+        title
       }
     }
     page {
-      totalPages
-      number
-      size
-      totalElements
+        totalElements
+        totalPages
+        number
+        size
     }
     facets {
       field
       entries {
-        content { 
+        content {
           value
-          count 
+          count
         }
       }
     }
