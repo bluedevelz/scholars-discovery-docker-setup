@@ -1,7 +1,6 @@
 middleware:
   index:
-    #onStartup: true
-    onStartup: false
+    onStartup: true
     allowed-origins:
     - http://localhost:3000
     - http://localhost:4200
