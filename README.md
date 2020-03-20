@@ -1,10 +1,29 @@
 # Quick runner/wrapper for scholars-discovery project
 
-Instructions:
+## Instructions:
 
-## Import git repository into the base folder of this repository
+### If Git source code management is not already installed on your system
+[Download and install Git](https://git-scm.com/downloads) 
 
-1) git clone https://github.com/vivo-community/scholars-discovery.git 
+### If Docker is not installed on your system use the information for installing on your platform [here](https://docs.docker.com).
+
+### Ensure that [docker-compose is installed](https://docs.docker.com/compose/install/)
+
+## Clone this repository
+from a command line...
+1) change the current directory to a directory where this repository should be stored on your local machine
+2) git clone https://github.com/vivo-community/scholars-discovery-docker-setup.git
+3) change directory to the new scholars-discovery-docker-setup directory created by git
+
+## Import samples git repositories and the scholars-discovery repository into the base folder of this repository
+from the command line in the scholars-disovery-docker-setup directory created above...
+
+1) 'git clone https://github.com/mconlon17/vivo-sample-data-generator.git' <br/>
+    generated data. May be customized by adapting the included python code [Author's README](https://github.com/mconlon17/vivo-sample-data-generator/blob/master/README.md)
+2) 'git clone https://github.com/vivo-project/sample-data.git' <br/>
+    sample data from openvivo and University of Florida
+3) 'git clone https://github.com/vivo-community/scholars-discovery.git' <br/>
+    The TDB data extractor, Solr index and GraphQL endpoint 
 
 NOTE: everything assumes the scholars-discovery code is checked out into the 
 `scholars-discovery` directory. It is in the `.gitignore` file.
@@ -14,12 +33,61 @@ not have a grapqhl endpoint - for the time being it may be best to switch to
 the `vstf-staging` branch (e.g. `git checkout ...`).  The idea for this
 project is you should be able to use it to run *any* branch in development mode.
 
-##  copy TDB data into data-imported directory
 
-Put TDB data in the data-imported/ directory.  Then `cd ..` (back up to scholars-discovery-setup directory)
+## Initial setup
+By default, running the 'docker-compose up' will create a new TDB for the openvivo sample data and clear the Solr index before loading. See the infrmation below in the section 'Sample Query' about running GraphQL queries.
 
-2) `cd ..`
+##  After initial execution (re-runs)
+The operation of the setup is primarily controlled by 4 variables in the application-dev.yml file
+in the base directory of this project (scholars-discovery-docker-setup). The controls affect the following
+features:
+1) Whether the Solr index is re-indexed when the containers are (re-)started<br/>
+   middleware.index.onStartup: true | false
+
+2) Whether the Solr index ls cleared before pulling data from the TDB (either supplied by the user or built from the samples (repos 1 and 2 above in the 'Import samples git repositories' step) - This option should be set for new TDBs, or when changing TDBs<br/>
+   middleware.index.clearOnStartup: true | false
+
+3) Whether to create the TDB from sample data (specific samples are built depending on the TDB name supplied as option 4)<br/>
+   middleware.index.createFromSampleData: true | false
+
+4) The directory containing the TDB (either built or user supplied)<br/>
+  If user-supplied i.e. a TDB generated outside this program, it must be copied into a directory under ./data-imported and the subdirectory should not be named 'generated', 'openvivo', 'florida' or 'duke' as these may be overwritten by the samples if 'middleware.triplestore.createFromSampleData' is set to true.
+  NOTE: in the docker container ./data-imported is mapped to /data, so the TDB directory settings are /data/MY_CUSTOM_TDB (for example as a user supplied TDB directory),  /data/generated (generated sample data), /data/florida (University of Florida sample data), or /data/openvivo (OpenVivo sample data). NOTE: /data/duke data is not supplied in the samples. <br/>
+  If set to one of the above values /data/generated, /data/openvivo, /data/florida then createFromSampleData will load the specifed samples from either the vivo-sample-data-generator or the predefined samples in vivo-project/sample-data.<br/>  If createFromSampleData is set to true for a user supplied TDB, unspecified errors will occur.
+NOTE: After the initial run, the values for onStartup, clearOnStartup and createFromSampleData should be set to false in most cases unless it's necessary to change TDB.
+
+##  Re-running and other scenarios
+
+### Re-running the containers
+1) In another command window, change directory to the scholars-discovery-docker-setup directory and use the command 'docker-compose down' to stop the containers currenly running
+2) If no TDB changes are required, ensure the following settings in application-dev.yml:<br/>
+   middleware.index.onStartup: false<br/>
+   middleware.index.clearOnStartup: false<br/>
+   middleware.triplestore.createFromSampleData: false<br/>
+
+3) In the original window, use 'docker-compose up' to start the containers<br/>
+NOTE: Required when changing TDB or changing application-dev.yml parameters
+
+### User supplied TDB
+1) Stop the containers (docker-compose down)<br/>
+2) Put TDB data in the data-imported/MY_TDB_NAME directory (create the directory if necessary).  Then ensure the current directory is the scholars-discovery-setup directory.<br/>
+3) Make adjustments to the application-dev.yml to point the system to the target TDB <br/>
+   middleware.index.onStartup: true<br/>
+   middleware.index.clearOnStartup: true<br/>
+   middleware.triplestore.directory: /data/MY_TDB_NAME<br/>
+   middleware.triplestore.createFromSampleData: false  ## since no sample data is involved and does not need to be loaded
 3) `docker-compose up`
+
+### Creating a TDB from one of the supplied sample datasets
+1) Stop the containers (docker-compose down)<br/>
+2) Make adjustments to the application-dev.yml to point the system to the target TDB <br/>
+   middleware.index.onStartup: true<br/>
+   middleware.index.clearOnStartup: true<br/>
+   middleware.triplestore.directory: /data/SAMPLE_DS_NAME <br/>
+     (SAMPLE_DS_NAME may be one of openvivo, florida or generated)<br/>
+   middleware.triplestore.createFromSampleData: false  ## since no sample data is involved and does not need to be loaded<br/>
+3) `docker-compose up`
+
 
 This is making us of a file `application-dev.yml` to configure `scholars-discovery`
 for local development mode.  It also defaults to importing data into the index 
@@ -33,9 +101,21 @@ index every time.
 # file: application-dev.yml
 
 ...
+
 middleware:
   index:
-    onStartup: true # change to false after first run
+    onStartup: true
+    clearOnStartup: true
+    allowed-origins:
+    - http://localhost:3000
+    - http://localhost:4200
+    - http://localhost:9000
+
+  triplestore:
+    type: edu.tamu.scholars.middleware.service.TDBTriplestore
+    directory: /data/openvivo
+    createFromSampleData: true
+
 ...
 
 ```
