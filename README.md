@@ -132,10 +132,9 @@ query  {
       {field: "name" },
       {field: "region"},
     ],
-    #filters: [{field: "region", value: "NC"}]
     paging: { pageSize:10, pageNumber: 0
     },
-    query: "*"
+    query: { q: "*" }
   ) {
     content {
       id
